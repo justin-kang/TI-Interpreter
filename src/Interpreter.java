@@ -3,6 +3,17 @@ import java.util.Scanner;
 
 public class Interpreter {
 
+    /* Things to implement:
+    -Grouping
+    -Integrals
+    -Derivatives
+    -Limits
+    -Solver
+    -Zero
+    -Exponents
+    -Factorials
+     */
+
     private HashMap<String, Double> variables;
     private boolean print = false;
     private double value = 0;
@@ -213,6 +224,9 @@ public class Interpreter {
             return sum(f, 1);
         else if (f.contains("->"))
             store(f);
+        else if (f.startsWith("(")) {
+
+        }
         else
             return arithmetic(f);
         return 0;
