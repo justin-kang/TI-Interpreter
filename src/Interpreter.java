@@ -3,27 +3,38 @@ import java.util.Scanner;
 
 public class Interpreter {
 
-    /* Things to implement:
-    -Grouping
-    -Integrals
-    -Derivatives
-    -Limits
-    -Solver
-    -Zero
-    -Exponents
-    -Factorials
-     */
-
     private HashMap<String, Double> variables;
-    private boolean print = false;
-    private double value = 0;
-    private boolean malformed = false;
+    private HashMap<String, Double> constants;
+    private boolean degrees;
+    private boolean bool;
+    private boolean malformed;
+    private boolean print;
+    private double value;
+
+    /*
+    //constants
+    //store
+    //bool
+    //four function
+    //factorial
+    //exponents
+    //abs
+    //trig
+    -logarithms
+    -calc
+    -summation
+    -product
+    -rounding
+    -mod
+    -solver
+    -zero
+     */
 
     private boolean isVar(String s) {
         return variables.containsKey(s);
     }
 
-    private boolean isNum(String s) {
+    private boolean isVal(String s) {
         try {
             Double.parseDouble(s);
         }
@@ -33,208 +44,323 @@ public class Interpreter {
         return true;
     }
 
-    private String formatArg(String s, int args) {
-        String arg;
-        try {
-            arg = s.substring(s.indexOf('(') + 1, s.lastIndexOf(')'));
-            int n = args;
-            while (n-- != 0)
-                arg = arg.substring(0, arg.lastIndexOf(','));
-        }
-        catch (StringIndexOutOfBoundsException e) {
+    private double store(String s) {
+        if (malformed)
+            return 0;
+        if (s.indexOf("->") == 0 || s.indexOf("->") == s.length()-1) {
             malformed = true;
-            return "0";
+            return 0;
         }
-        return arg;
+        String var = s.substring(0, s.indexOf("->"));
+        double val = sort(s.substring(s.indexOf("->")+1));
+        variables.put(var, val);
+        return 0;
+    }
+
+    private boolean isBool(String s) {
+        if (s.contains("<") || s.contains(">") || s.contains("!=") ||
+                s.contains("==")) {
+            bool = true;
+            if (s.startsWith(">") || s.endsWith(">") || s.startsWith("<") ||
+                    s.endsWith("<") || s.startsWith("=") || s.endsWith("=") ||
+                    s.startsWith("!") || s.endsWith("!")) {
+                malformed = true;
+                return true;
+            }
+        }
+        else
+            bool = false;
+        return bool;
+    }
+
+    private double bool(String s) {
+        if (malformed)
+            return 0;
+        double left;
+        double right;
+        if (s.contains(">=")) {
+            left = evaluate(s.substring(0, s.indexOf(">=")));
+            right = evaluate(s.substring(s.indexOf(">=")+2));
+            if (left >= right)
+                return 1;
+        }
+        else if (s.contains("<=")) {
+            left = evaluate(s.substring(0, s.indexOf("<=")));
+            right = evaluate(s.substring(s.indexOf("<=")+2));
+            if (left <= right)
+                return 1;
+        }
+        else if (s.contains(">")) {
+            left = evaluate(s.substring(0, s.indexOf(">")));
+            right = evaluate(s.substring(s.indexOf(">")+1));
+            if (left > right)
+                return 1;
+        }
+        else if (s.contains("<")) {
+            left = evaluate(s.substring(0, s.indexOf("<")));
+            right = evaluate(s.substring(s.indexOf("<")+1));
+            if (left < right)
+                return 1;
+        }
+        else if (s.contains("==")) {
+            left = evaluate(s.substring(0, s.indexOf("==")));
+            right = evaluate(s.substring(s.indexOf("==")+2));
+            if (left == right)
+                return 1;
+        }
+        else if (s.contains("!=")) {
+            left = evaluate(s.substring(0, s.indexOf("!=")));
+            right = evaluate(s.substring(s.indexOf("!=")+2));
+            if (left != right)
+                return 1;
+        }
+        return 0;
+    }
+
+    private String group(String s) {
+        if (malformed)
+            return "";
+        int count = 0;
+        int index = 0;
+        for (char c : s.toCharArray()) {
+            if (c == '(')
+                count++;
+            else if (c == ')')
+                count--;
+            if (count == 0)
+                break;
+            index++;
+        }
+        if (count != 0) {
+            malformed = true;
+            return "";
+        }
+        double left = sort(s.substring(1, index));
+        String right = s.substring(index);
+        return Double.toString(left).concat(right);
+    }
+
+    private double abs(String s) {
+        if (malformed)
+            return 0;
+        return Math.abs(evaluate(s));
     }
 
     private double cos(String s) {
-        String arg = formatArg(s, 0);
-        double val = evaluate(arg);
-        if (s.startsWith("cos("))
-            return Math.cos(val);
-        else if (s.startsWith("cosh("))
-            return Math.cosh(val);
-        else if (s.startsWith("cos-1("))
-            return Math.acos(val);
-        else {
-            malformed = true;
+        if (malformed)
             return 0;
+        double val;
+        if (s.startsWith("cosh")) {
+            val = evaluate(s.substring("cosh".length()));
+            if (degrees)
+                val *= Math.PI / 180.0;
+            return Math.cosh(val);
+        }
+        else if (s.startsWith("cos-1")) {
+            val = evaluate(s.substring("cos-1".length()));
+            if (degrees)
+                val *= Math.PI / 180.0;
+            return Math.acos(val);
+        }
+        else {
+            val = evaluate(s.substring("cos".length()));
+            if (degrees)
+                val *= Math.PI / 180.0;
+            return Math.cos(val);
         }
     }
 
     private double sin(String s) {
-        String arg = formatArg(s, 0);
-        double val = evaluate(arg);
-        if (s.startsWith("sin("))
-            return Math.sin(val);
-        else if (s.startsWith("sinh("))
-            return Math.sinh(val);
-        else if (s.startsWith("sin-1("))
-            return Math.asin(val);
-        else {
-            malformed = true;
+        if (malformed)
             return 0;
+        double val;
+        if (s.startsWith("sinh")) {
+            val = evaluate(s.substring("sinh".length()));
+            if (degrees)
+                val *= Math.PI / 180.0;
+            return Math.sinh(val);
+        }
+        else if (s.startsWith("sin-1")) {
+            val = evaluate(s.substring("sin-1".length()));
+            if (degrees)
+                val *= Math.PI / 180.0;
+            return Math.asin(val);
+        }
+        else {
+            val = evaluate(s.substring("sin".length()));
+            if (degrees)
+                val *= Math.PI / 180.0;
+            return Math.sin(val);
         }
     }
 
     private double tan(String s) {
-        String arg = formatArg(s, 0);
-        double val = evaluate(arg);
-        if (s.startsWith("tan("))
-            return Math.tan(val);
-        if (s.startsWith("tanh("))
-            return Math.tanh(val);
-        if (s.startsWith("tan-1"))
-            return Math.atan(val);
-        else {
-            malformed = true;
-            return 0;
-        }
-    }
-
-    private double logarithm(String s) {
-        String arg;
-        double base;
-        if (s.lastIndexOf(',') == -1) {
-            arg = formatArg(s, 0);
-            base = 10;
-        }
-        else {
-            String args = s.substring(s.lastIndexOf(',')+1, s.lastIndexOf(')'));
-            if (args.contains(")")) {
-                arg = formatArg(s, 0);
-                base = 10;
-            }
-            else {
-                String test = s.substring(s.lastIndexOf(',')+1, s.lastIndexOf(')'));
-                base = evaluate(test);
-                arg = formatArg(s, 1);
-                if (malformed)
-                    return 0;
-            }
-        }
-        if (evaluate(arg) == 0 || base == 0) {
-            print = false;
-            System.out.println("undef");
-            return 0;
-        }
-        if (base == Math.E)
-            return Math.log(evaluate(arg));
-        else if (base == 1) {
-            if (evaluate(arg) != 1 && !malformed) {
-                print = false;
-                System.out.println("undef");
-                return 0;
-            }
-            else if (malformed)
-                return 0;
-            else
-                return 1;
-        }
-        else
-            return Math.log(evaluate(arg))/Math.log(base);
-    }
-
-    private double sum(String s, int n) {
-        String arg = formatArg(s, 3);
-        String test = s;
-        int ubound;
-        int lbound;
-        String var;
-        try {
-            ubound = (int)evaluate(test.substring(test.lastIndexOf(',') + 1, test.lastIndexOf(')')));
-            test = test.substring(0, test.lastIndexOf(','));
-            lbound = (int)evaluate(test.substring(test.lastIndexOf(',') + 1));
-            test = test.substring(0, test.lastIndexOf(','));
-            var = test.substring(test.lastIndexOf(','));
-        }
-        catch (StringIndexOutOfBoundsException e) {
-            malformed = true;
-            return 0;
-        }
-        double sum = 0;
-        boolean contained = variables.containsKey(var);
-        double original = 0;
-        if (contained)
-            original = variables.get(var);
-        for (int i = lbound; i <= ubound; i++) {
-            variables.put(var, (double)i);
-            if (n == 0)
-                sum += evaluate(arg);
-            else if (n == 1) {
-                if (i == lbound)
-                    sum = evaluate(arg);
-                else
-                    sum *= evaluate(arg);
-            }
-        }
-        if (contained)
-            variables.put(var, original);
-        else
-            variables.remove(var);
-        return sum;
-    }
-
-    private void store(String s) {
-        print = false;
-        String var = s.substring(0, s.indexOf("->"));
-        String arg = s.substring(s.indexOf("->")+2);
-        double val = evaluate(arg);
-        if (isNum(Character.toString(var.charAt(0))))
-            return;
         if (malformed)
-            return;
-        variables.put(var, val);
+            return 0;
+        double val;
+        if (s.startsWith("tanh")) {
+            val = evaluate(s.substring("tanh".length()));
+            if (degrees)
+                val *= Math.PI / 180.0;
+            return Math.tanh(val);
+        }
+        else if (s.startsWith("tan-1")) {
+            val = evaluate(s.substring("tan-1".length()));
+            if (degrees)
+                val *= Math.PI / 180.0;
+            return Math.atan(val);
+        }
+        else {
+            val = evaluate(s.substring("tan".length()));
+            if (degrees)
+                val *= Math.PI / 180.0;
+            return Math.tan(val);
+        }
     }
 
-    private double arithmetic(String s) {
-        if (isNum(s))
-            return Double.parseDouble(s);
-        else if (isVar(s))
+    private double evaluate(String s) {
+        if (malformed)
+            return 0;
+        double left;
+        double right;
+        if (isVar(s))
             return variables.get(s);
-        else if (s.equals("pi"))
-            return Math.PI;
-        else if (s.equals("e"))
-            return Math.E;
-        else if (s.contains(",")) {
+        else if (isVal(s))
+            return Double.parseDouble(s);
+        else if (constants.containsKey(s))
+            return constants.get(s);
+        else if (s.contains("+")) {
+            if (s.startsWith("+") || s.endsWith("+")) {
+                malformed = true;
+                return 0;
+            }
+            left = sort(s.substring(0, s.indexOf("+")));
+            right = sort(s.substring(s.indexOf("+")+1));
+            return left + right;
+        }
+        else if (s.contains("-")) {
+            if (s.endsWith("-")) {
+                malformed = true;
+                return 0;
+            }
+            left = sort(s.substring(0, s.indexOf("-")));
+            right = sort(s.substring(s.indexOf("-")+1));
+            return left - right;
+        }
+        else if (s.startsWith("*") || s.endsWith("*")) {
+            if (s.indexOf("*") == 0) {
+                malformed = true;
+                return 0;
+            }
+            left = sort(s.substring(0, s.indexOf("*")));
+            right = sort(s.substring(s.indexOf("*")+1));
+            return left * right;
+        }
+        else if (s.contains("/")) {
+            if (s.startsWith("/") || s.endsWith("/")) {
+                malformed = true;
+                return 0;
+            }
+            left = sort(s.substring(0, s.indexOf("/")));
+            right = sort(s.substring(s.indexOf("/")+1));
+            if (right == 0) {
+                malformed = true;
+                return 0;
+            }
+            return left / right;
+        }
+        else if (s.contains("^")) {
+            if (s.startsWith("^") || s.endsWith("^")) {
+                malformed = true;
+                return 0;
+            }
+            left = sort(s.substring(0, s.indexOf("^")));
+            right = sort(s.substring(s.indexOf("^")+1));
+            return Math.pow(left, right);
+        }
+        else if (s.endsWith("!")) {
+            if (s.startsWith("!")) {
+                malformed = true;
+                return 0;
+            }
+            left = sort(s.substring(0, s.indexOf("!")));
+            for (right = left - 1; right > 1; right--) {
+                left *= right;
+            }
+            return left;
+        }
+        else if (s.startsWith("abs"))
+            return abs(s);
+        else if (s.startsWith("cos"))
+            return cos(s);
+        else if (s.startsWith("sin"))
+            return sin(s);
+        else if (s.startsWith("tan"))
+            return tan(s);
+        else {
             malformed = true;
             return 0;
         }
-        return 0;
     }
 
-    private double evaluate(String f) {
-        if (f.startsWith("log("))
-            return logarithm(f);
-        else if (f.startsWith("ln(")) {
-            f = f.replaceFirst("ln", "log");
-            f = f.substring(0, f.lastIndexOf(')'));
-            f = f.concat(",e)");
-            return logarithm(f);
-        } else if (f.startsWith("cos"))
-            return cos(f);
-        else if (f.startsWith("sin"))
-            return sin(f);
-        else if (f.startsWith("tan"))
-            return tan(f);
-        else if (f.startsWith("sum("))
-            return sum(f, 0);
-        else if (f.startsWith("prod("))
-            return sum(f, 1);
-        else if (f.contains("->"))
-            store(f);
-        else if (f.startsWith("(")) {
-
+    private double sort(String s) {
+        if (malformed)
+            return 0;
+        if (s.contains("->")) {
+            print = false;
+            return store(s);
         }
-        else
-            return arithmetic(f);
-        return 0;
+        else if (isBool(s))
+            return bool(s);
+        else if (s.startsWith("("))
+            return sort(group(s));
+        else if (s.contains("(")) {
+            String left = s.substring(0, s.indexOf("("));
+            String right = group(s.substring(s.indexOf("(")));
+            return sort(left.concat(right));
+        }
+        else if (s.isEmpty())
+            return 0;
+        else return evaluate(s);
+    }
+
+    private void initConstants() {
+        constants = new HashMap<>();
+        constants.put("pi", Math.PI);
+        constants.put("e", Math.E);
     }
 
     public static void main(String[] args) {
         Interpreter interpret = new Interpreter();
+        if (args[0] != null) {
+            String mode = args[0].toLowerCase();
+            if (mode.equals("deg"))
+                interpret.degrees = true;
+            else if (mode.equals("rad"))
+                interpret.degrees = false;
+            else {
+                System.out.println("Unavailable mode");
+                System.exit(-1);
+            }
+        }
+        else
+            interpret.degrees = false;
+        double round = 4.0;
+        if (args[1] != null) {
+            try {
+                round = Double.parseDouble(args[1]);
+            }
+            catch (NumberFormatException e) {
+                System.out.println("Unavailable round");
+                System.exit(-1);
+            }
+            if (round < 0) {
+                System.out.println("Unavailable round");
+                System.exit(-1);
+            }
+        }
         interpret.variables = new HashMap<>();
+        interpret.initConstants();
         Scanner scan = new Scanner(System.in);
         while (true) {
             String input = scan.nextLine();
@@ -243,19 +369,31 @@ public class Interpreter {
             interpret.print = true;
             if (function.equals("exit"))
                 break;
-            interpret.value = interpret.evaluate(function);
+            if (function.equals("clear")) {
+                interpret.variables.clear();
+                continue;
+            }
+            interpret.value = interpret.sort(function);
             if (interpret.malformed) {
                 System.out.println("Invalid input");
                 System.out.println(input);
                 continue;
             }
             if (interpret.print) {
-                int cast = (int)Math.round(interpret.value * 10000);
-                interpret.value = cast / 10000.0;
-                if (interpret.value % 1 == 0)
-                    System.out.println((int)interpret.value);
-                else
-                    System.out.println(interpret.value);
+                if (interpret.bool) {
+                    if (interpret.value == 1)
+                        System.out.println("true");
+                    else
+                        System.out.println("false");
+                }
+                else {
+                    int cast = (int)Math.round(interpret.value * Math.pow(10.0, round));
+                    interpret.value = cast / Math.pow(10.0, round);
+                    if (interpret.value % 1 == 0)
+                        System.out.println((int)interpret.value);
+                    else
+                        System.out.println(interpret.value);
+                }
             }
         }
     }
