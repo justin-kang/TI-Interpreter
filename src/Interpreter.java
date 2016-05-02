@@ -36,7 +36,7 @@ public class Interpreter {
 
     private boolean isVal(String s) {
         try {
-            Double.parseDouble(s);
+            Float.parseFloat(s);
         }
         catch (NumberFormatException e) {
             return false;
@@ -136,14 +136,14 @@ public class Interpreter {
             return "";
         }
         double left = sort(s.substring(1, index));
-        String right = s.substring(index);
+        String right = s.substring(index+1);
         return Double.toString(left).concat(right);
     }
 
     private double abs(String s) {
         if (malformed)
             return 0;
-        return Math.abs(evaluate(s));
+        return Math.abs(evaluate(s.substring(3)));
     }
 
     private double cos(String s) {
@@ -225,8 +225,15 @@ public class Interpreter {
         double right;
         if (isVar(s))
             return variables.get(s);
-        else if (isVal(s))
-            return Double.parseDouble(s);
+        else if (isVal(s)) {
+            try {
+                return (double)Float.parseFloat(s);
+            }
+            catch (NumberFormatException e) {
+                malformed = true;
+                return 0;
+            }
+        }
         else if (constants.containsKey(s))
             return constants.get(s);
         else if (s.contains("+")) {
@@ -238,7 +245,7 @@ public class Interpreter {
             right = sort(s.substring(s.indexOf("+")+1));
             return left + right;
         }
-        else if (s.contains("-")) {
+        else if (s.contains("-") && isVal(s.substring(0, s.indexOf("-")))) {
             if (s.endsWith("-")) {
                 malformed = true;
                 return 0;
@@ -247,8 +254,8 @@ public class Interpreter {
             right = sort(s.substring(s.indexOf("-")+1));
             return left - right;
         }
-        else if (s.startsWith("*") || s.endsWith("*")) {
-            if (s.indexOf("*") == 0) {
+        else if (s.contains("*")) {
+            if (s.startsWith("*") || s.endsWith("*")) {
                 malformed = true;
                 return 0;
             }
@@ -332,7 +339,7 @@ public class Interpreter {
 
     public static void main(String[] args) {
         Interpreter interpret = new Interpreter();
-        if (args[0] != null) {
+        if (args.length > 0 && args[0] != null) {
             String mode = args[0].toLowerCase();
             if (mode.equals("deg"))
                 interpret.degrees = true;
@@ -346,9 +353,9 @@ public class Interpreter {
         else
             interpret.degrees = false;
         double round = 4.0;
-        if (args[1] != null) {
+        if (args.length > 1 && args[1] != null) {
             try {
-                round = Double.parseDouble(args[1]);
+                round = (double)Float.parseFloat(args[1]);
             }
             catch (NumberFormatException e) {
                 System.out.println("Unavailable round");
