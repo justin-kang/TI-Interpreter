@@ -18,10 +18,13 @@ public class Interpreter {
     //four function
     //factorial
     //exponents
+    //sqrt
     //abs
     //trig
     -logarithms
-    -calc
+    -differentiation
+    -integration
+    -limits
     -summation
     -product
     -rounding
@@ -79,38 +82,38 @@ public class Interpreter {
         double left;
         double right;
         if (s.contains(">=")) {
-            left = evaluate(s.substring(0, s.indexOf(">=")));
-            right = evaluate(s.substring(s.indexOf(">=")+2));
+            left = sort(s.substring(0, s.indexOf(">=")));
+            right = sort(s.substring(s.indexOf(">=")+2));
             if (left >= right)
                 return 1;
         }
         else if (s.contains("<=")) {
-            left = evaluate(s.substring(0, s.indexOf("<=")));
-            right = evaluate(s.substring(s.indexOf("<=")+2));
+            left = sort(s.substring(0, s.indexOf("<=")));
+            right = sort(s.substring(s.indexOf("<=")+2));
             if (left <= right)
                 return 1;
         }
         else if (s.contains(">")) {
-            left = evaluate(s.substring(0, s.indexOf(">")));
-            right = evaluate(s.substring(s.indexOf(">")+1));
+            left = sort(s.substring(0, s.indexOf(">")));
+            right = sort(s.substring(s.indexOf(">")+1));
             if (left > right)
                 return 1;
         }
         else if (s.contains("<")) {
-            left = evaluate(s.substring(0, s.indexOf("<")));
-            right = evaluate(s.substring(s.indexOf("<")+1));
+            left = sort(s.substring(0, s.indexOf("<")));
+            right = sort(s.substring(s.indexOf("<")+1));
             if (left < right)
                 return 1;
         }
         else if (s.contains("==")) {
-            left = evaluate(s.substring(0, s.indexOf("==")));
-            right = evaluate(s.substring(s.indexOf("==")+2));
+            left = sort(s.substring(0, s.indexOf("==")));
+            right = sort(s.substring(s.indexOf("==")+2));
             if (left == right)
                 return 1;
         }
         else if (s.contains("!=")) {
-            left = evaluate(s.substring(0, s.indexOf("!=")));
-            right = evaluate(s.substring(s.indexOf("!=")+2));
+            left = sort(s.substring(0, s.indexOf("!=")));
+            right = sort(s.substring(s.indexOf("!=")+2));
             if (left != right)
                 return 1;
         }
@@ -137,13 +140,13 @@ public class Interpreter {
         }
         double left = sort(s.substring(1, index));
         String right = s.substring(index+1);
-        return Double.toString(left).concat(right);
+        return Double.toString(left) + right;
     }
 
     private double abs(String s) {
         if (malformed)
             return 0;
-        return Math.abs(evaluate(s.substring(3)));
+        return Math.abs(sort(s.substring(3)));
     }
 
     private double cos(String s) {
@@ -151,19 +154,23 @@ public class Interpreter {
             return 0;
         double val;
         if (s.startsWith("cosh")) {
-            val = evaluate(s.substring("cosh".length()));
+            val = sort(s.substring("cosh".length()));
             if (degrees)
                 val *= Math.PI / 180.0;
             return Math.cosh(val);
         }
         else if (s.startsWith("cos-1")) {
-            val = evaluate(s.substring("cos-1".length()));
+            val = sort(s.substring("cos-1".length()));
             if (degrees)
                 val *= Math.PI / 180.0;
+            if (Math.abs(val) > 1) {
+                malformed = true;
+                return 0;
+            }
             return Math.acos(val);
         }
         else {
-            val = evaluate(s.substring("cos".length()));
+            val = sort(s.substring("cos".length()));
             if (degrees)
                 val *= Math.PI / 180.0;
             return Math.cos(val);
@@ -175,19 +182,23 @@ public class Interpreter {
             return 0;
         double val;
         if (s.startsWith("sinh")) {
-            val = evaluate(s.substring("sinh".length()));
+            val = sort(s.substring("sinh".length()));
             if (degrees)
                 val *= Math.PI / 180.0;
             return Math.sinh(val);
         }
         else if (s.startsWith("sin-1")) {
-            val = evaluate(s.substring("sin-1".length()));
+            val = sort(s.substring("sin-1".length()));
             if (degrees)
                 val *= Math.PI / 180.0;
+            if (Math.abs(val) > 1) {
+                malformed = true;
+                return 0;
+            }
             return Math.asin(val);
         }
         else {
-            val = evaluate(s.substring("sin".length()));
+            val = sort(s.substring("sin".length()));
             if (degrees)
                 val *= Math.PI / 180.0;
             return Math.sin(val);
@@ -199,21 +210,28 @@ public class Interpreter {
             return 0;
         double val;
         if (s.startsWith("tanh")) {
-            val = evaluate(s.substring("tanh".length()));
+            val = sort(s.substring("tanh".length()));
             if (degrees)
                 val *= Math.PI / 180.0;
             return Math.tanh(val);
         }
         else if (s.startsWith("tan-1")) {
-            val = evaluate(s.substring("tan-1".length()));
+            val = sort(s.substring("tan-1".length()));
             if (degrees)
                 val *= Math.PI / 180.0;
             return Math.atan(val);
         }
         else {
-            val = evaluate(s.substring("tan".length()));
+            val = sort(s.substring("tan".length()));
             if (degrees)
                 val *= Math.PI / 180.0;
+            int t = (int)(val / (Math.PI/2));
+            double test = (Math.PI/2) * t;
+            if (test >= val*0.999 && test <= val*1.001
+                    && test % Math.PI != 0) {
+                malformed = true;
+                return 0;
+            }
             return Math.tan(val);
         }
     }
@@ -296,14 +314,34 @@ public class Interpreter {
             }
             return left;
         }
-        else if (s.startsWith("abs"))
+        else if (s.startsWith("abs")) {
+            if (s.endsWith("abs")) {
+                malformed = true;
+                return 0;
+            }
             return abs(s);
-        else if (s.startsWith("cos"))
+        }
+        else if (s.startsWith("cos")) {
+            if (s.endsWith("cos")) {
+                malformed = true;
+                return 0;
+            }
             return cos(s);
-        else if (s.startsWith("sin"))
+        }
+        else if (s.startsWith("sin")) {
+            if (s.endsWith("sin")) {
+                malformed = true;
+                return 0;
+            }
             return sin(s);
-        else if (s.startsWith("tan"))
+        }
+        else if (s.startsWith("tan")) {
+            if (s.endsWith("tan")) {
+                malformed = true;
+                return 0;
+            }
             return tan(s);
+        }
         else {
             malformed = true;
             return 0;
@@ -321,10 +359,70 @@ public class Interpreter {
             return bool(s);
         else if (s.startsWith("("))
             return sort(group(s));
+        else if (s.contains("sqrt(")) {
+            if (s.endsWith("sqrt(")) {
+                malformed = true;
+                return 0;
+            }
+            int index = s.indexOf("sqrt(");
+            String test = s.substring(index);
+            int count = 0;
+            boolean start = false;
+            for (char c : test.toCharArray()) {
+                if (c == '(') {
+                    count++;
+                    start = true;
+                }
+                else if (c == ')')
+                    count--;
+                index++;
+                if (count == 0 && start)
+                    break;
+            }
+            String left = s.substring(0, s.indexOf("sqrt("));
+            String val;
+            String right;
+            if (index == s.length()) {
+                val = s.substring(s.indexOf("sqrt")+4);
+                right = "^(1/2)";
+            }
+            else {
+                val = s.substring(s.indexOf("sqrt")+4, index);
+                right = "^(1/2)" + s.substring(index);
+            }
+            return sort(left + val + right);
+        }
+        else if (s.contains("log(")) {
+            return 0;
+        }
+        else if (s.contains("ln(")) {
+            return 0;
+        }
+        else if (s.contains("sum(")) {
+            return 0;
+        }
+        else if (s.contains("prod(")) {
+            return 0;
+        }
+        else if (s.contains("mod(")) {
+            return 0;
+        }
+        else if (s.contains("round(")) {
+            return 0;
+        }
+        else if (s.contains("d(")) {
+            return 0;
+        }
+        else if (s.contains("int(")) {
+            return 0;
+        }
+        else if (s.contains("limit(")) {
+            return 0;
+        }
         else if (s.contains("(")) {
             String left = s.substring(0, s.indexOf("("));
             String right = group(s.substring(s.indexOf("(")));
-            return sort(left.concat(right));
+            return sort(left + right);
         }
         else if (s.isEmpty())
             return 0;
@@ -371,7 +469,7 @@ public class Interpreter {
         Scanner scan = new Scanner(System.in);
         while (true) {
             String input = scan.nextLine();
-            String function = input.toLowerCase();
+            String function = input.toLowerCase().replaceAll(" ", "");
             interpret.malformed = false;
             interpret.print = true;
             if (function.equals("exit"))
@@ -394,8 +492,9 @@ public class Interpreter {
                         System.out.println("false");
                 }
                 else {
-                    int cast = (int)Math.round(interpret.value * Math.pow(10.0, round));
-                    interpret.value = cast / Math.pow(10.0, round);
+                    double f = Math.pow(10.0, round);
+                    int cast = (int)Math.round(interpret.value * f);
+                    interpret.value = cast / f;
                     if (interpret.value % 1 == 0)
                         System.out.println((int)interpret.value);
                     else
