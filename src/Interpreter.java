@@ -125,12 +125,15 @@ public class Interpreter {
             return "";
         int count = 0;
         int index = 0;
+        boolean set = false;
         for (char c : s.toCharArray()) {
-            if (c == '(')
+            if (c == '(') {
                 count++;
+                set = true;
+            }
             else if (c == ')')
                 count--;
-            if (count == 0)
+            if (count == 0 && set)
                 break;
             index++;
         }
@@ -141,6 +144,57 @@ public class Interpreter {
         double left = sort(s.substring(1, index));
         String right = s.substring(index+1);
         return Double.toString(left) + right;
+    }
+
+    private String subParentheses(String s) {
+        int count = 0;
+        int index = 0;
+        boolean set = false;
+        for (char c : s.toCharArray()) {
+            if (c == '(') {
+                count++;
+                set = true;
+            }
+            else if (c == ')') {
+                count--;
+            }
+            index++;
+            if (count == 0 && set)
+                break;
+        }
+        if (index == s.length())
+            return s;
+        return s.substring(0, index);
+    }
+
+    private String log(String s) {
+        String left = s.substring(0, s.indexOf("log("));
+        String val = subParentheses(s.substring(s.indexOf("log(")));
+        String right = s.substring(s.indexOf("log(")+val.length());
+        double arg;
+        if (val.contains(",")) {
+            arg = sort(val.substring(val.indexOf("(")+1, val.lastIndexOf(",")));
+            double base = sort(val.substring(val.lastIndexOf(",")+1, val.lastIndexOf(")")));
+            if (arg == 0) {
+                malformed = true;
+                return "";
+            }
+            arg = Math.log(arg)/Math.log(base);
+        }
+        else {
+            arg = sort(val.substring(val.indexOf("(")+1, val.lastIndexOf(")")));
+            if (arg == 0) {
+                malformed = true;
+                return "";
+            }
+            arg = Math.log10(arg);
+        }
+        if (Double.isNaN(arg)) {
+            malformed = true;
+            return "";
+        }
+        val = Double.toString(arg);
+        return left + val + right;
     }
 
     private double abs(String s) {
@@ -393,7 +447,7 @@ public class Interpreter {
             return sort(left + val + right);
         }
         else if (s.contains("log(")) {
-            return 0;
+            return sort(log(s));
         }
         else if (s.contains("ln(")) {
             return 0;
