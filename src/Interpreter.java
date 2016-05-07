@@ -22,15 +22,18 @@ public class Interpreter {
     //abs
     //trig
     //logarithms
-    -differentiation
-    -integration
-    -limits
-    -summation
-    -product
-    -rounding
-    -mod
+    //integration
+    //summation
+    //product
+    //rounding
+    //mod
+     */
+
+    /*
     -solver
     -zero
+    -limit
+    -differentiation
      */
 
     private boolean isVar(String s) {
@@ -47,19 +50,6 @@ public class Interpreter {
         return true;
     }
 
-    private double store(String s) {
-        if (malformed)
-            return 0;
-        if (s.indexOf("->") == 0 || s.indexOf("->") == s.length()-1) {
-            malformed = true;
-            return 0;
-        }
-        String var = s.substring(0, s.indexOf("->"));
-        double val = sort(s.substring(s.indexOf("->")+1));
-        variables.put(var, val);
-        return 0;
-    }
-
     private boolean isBool(String s) {
         if (s.contains("<") || s.contains(">") || s.contains("!=") ||
                 s.contains("==")) {
@@ -74,6 +64,18 @@ public class Interpreter {
         else
             bool = false;
         return bool;
+    }
+
+    private void store(String s) {
+        if (malformed)
+            return;
+        if (s.indexOf("->") == 0 || s.indexOf("->") == s.length()-1) {
+            malformed = true;
+            return;
+        }
+        String var = s.substring(0, s.indexOf("->"));
+        double val = sort(s.substring(s.indexOf("->")+1));
+        variables.put(var, val);
     }
 
     private double bool(String s) {
@@ -120,33 +122,9 @@ public class Interpreter {
         return 0;
     }
 
-    private String group(String s) {
+    private String subParentheses(String s) {
         if (malformed)
             return "";
-        int count = 0;
-        int index = 0;
-        boolean set = false;
-        for (char c : s.toCharArray()) {
-            if (c == '(') {
-                count++;
-                set = true;
-            }
-            else if (c == ')')
-                count--;
-            if (count == 0 && set)
-                break;
-            index++;
-        }
-        if (count != 0) {
-            malformed = true;
-            return "";
-        }
-        double left = sort(s.substring(1, index));
-        String right = s.substring(index+1);
-        return Double.toString(left) + right;
-    }
-
-    private String subParentheses(String s) {
         int count = 0;
         int index = 0;
         boolean set = false;
@@ -162,54 +140,174 @@ public class Interpreter {
             if (count == 0 && set)
                 break;
         }
+        if (count != 0) {
+            malformed = true;
+            return "";
+        }
         if (index == s.length())
             return s;
         return s.substring(0, index);
     }
 
-    private String log(String s) {
-        String left = s.substring(0, s.indexOf("log("));
-        String val = subParentheses(s.substring(s.indexOf("log(")));
-        String right = s.substring(s.indexOf("log(")+val.length());
+    private double log(String s) {
+        if (malformed)
+            return 0;
         double arg;
-        if (val.contains(",")) {
-            arg = sort(val.substring(val.indexOf("(")+1, val.lastIndexOf(",")));
-            double base = sort(val.substring(val.lastIndexOf(",")+1, val.lastIndexOf(")")));
+        if (s.contains(",")) {
+            arg = sort(s.substring(s.indexOf("(")+1, s.lastIndexOf(",")));
+            double base = sort(s.substring(s.lastIndexOf(",")+1, s.lastIndexOf(")")));
             if (arg == 0) {
                 malformed = true;
-                return "";
+                return 0;
             }
             arg = Math.log(arg)/Math.log(base);
         }
         else {
-            arg = sort(val.substring(val.indexOf("(")+1, val.lastIndexOf(")")));
+            arg = sort(s.substring(s.indexOf("(")+1, s.lastIndexOf(")")));
             if (arg == 0) {
                 malformed = true;
-                return "";
+                return 0;
             }
             arg = Math.log10(arg);
         }
         if (Double.isNaN(arg)) {
             malformed = true;
-            return "";
+            return 0;
         }
-        val = Double.toString(arg);
-        return left + val + right;
+        return arg;
     }
 
-    private String ln(String s) {
-        String left = s.substring(0, s.indexOf("ln"));
-        String val = subParentheses(s.substring(s.indexOf("ln(")));
-        String right = s.substring(s.indexOf("ln(")+val.length());
-        double arg = sort(val.substring(val.indexOf("(")+1, val.lastIndexOf(")")));
+    private double ln(String s) {
+        if (malformed)
+            return 0;
+        double arg = sort(s.substring(s.indexOf("(")+1, s.lastIndexOf(")")));
         if (arg == 0) {
             malformed = true;
-            return "";
+            return 0;
         }
-        val = Double.toString(arg);
-        return left + val + right;
+        return Math.log(arg);
     }
-    
+
+    private double sum(String s, int op) {
+        if (malformed) {
+            return 0;
+        }
+        if (s.length() - s.replaceAll(",", "").length() < 3) {
+            malformed = true;
+            return 0;
+        }
+        double val = 0;
+        double v = 0;
+        boolean stored = false;
+        int u = (int)sort(s.substring(s.lastIndexOf(",")+1, s.lastIndexOf(")")));
+        s = s.substring(0, s.lastIndexOf(","));
+        int l = (int)sort(s.substring(s.lastIndexOf(",")+1));
+        s = s.substring(0, s.lastIndexOf(","));
+        String var = s.substring(s.lastIndexOf(",")+1);
+        if (variables.containsKey(var)) {
+            stored = true;
+            v = variables.get(var);
+        }
+        String arg = s.substring(s.indexOf("sum(")+4, s.lastIndexOf(","));
+        if (l > u) {
+            if (op == 0)
+                return 0;
+            else if (op == 1)
+                return 1;
+            else {
+                malformed = true;
+                return 0;
+            }
+        }
+        for (int i = l; i <= u; i++) {
+            variables.put(var, (double)i);
+            if (op == 0)
+                val += sort(arg);
+            else if (op == 1) {
+                if (i == l)
+                    val = sort(arg);
+                else
+                    val *= sort(arg);
+            }
+            else {
+                malformed = true;
+                return 0;
+            }
+        }
+        if (stored)
+            variables.put(var, v);
+        else
+            variables.remove(var);
+        return val;
+    }
+
+    private double mod(String s) {
+        if (malformed)
+            return 0;
+        if (!s.contains(",")) {
+            malformed = true;
+            return 0;
+        }
+        double dividend = sort(s.substring(s.indexOf("mod(")+4, s.lastIndexOf(",")));
+        double divisor = sort(s.substring(s.lastIndexOf(",")+1, s.lastIndexOf(")")));
+        return dividend % divisor;
+    }
+
+    private double round(String s) {
+        if (malformed)
+            return 0;
+        if (!s.contains(",")) {
+            malformed = true;
+            return 0;
+        }
+        double arg = sort(s.substring(s.indexOf("round(")+6, s.lastIndexOf(",")));
+        double round = sort(s.substring(s.lastIndexOf(",")+1, s.lastIndexOf(")")));
+        round = Math.pow(10.0, round);
+        int cast = (int)Math.round(arg * round);
+        return cast / round;
+    }
+
+    private double integrate(String s) {
+        if (malformed) {
+            return 0;
+        }
+        if (s.length() - s.replaceAll(",", "").length() < 3) {
+            malformed = true;
+            return 0;
+        }
+        double val = 0;
+        double v = 0;
+        boolean stored = false;
+        double u = sort(s.substring(s.lastIndexOf(",")+1, s.lastIndexOf(")")));
+        s = s.substring(0, s.lastIndexOf(","));
+        double l = sort(s.substring(s.lastIndexOf(",")+1));
+        s = s.substring(0, s.lastIndexOf(","));
+        String var = s.substring(s.lastIndexOf(",")+1);
+        if (variables.containsKey(var)) {
+            stored = true;
+            v = variables.get(var);
+        }
+        String arg = s.substring(s.indexOf("int(")+4, s.lastIndexOf(","));
+        if (l > u) {
+            arg = "-" + arg;
+            double temp = l;
+            l = u;
+            u = temp;
+        }
+        for (double i = l; i < u; i = i + (u-l)/1000000.0) {
+            variables.put(var, i);
+            double v1 = sort(arg);
+            variables.put(var, i + (u-l)/1000000.0);
+            double v2 = sort(arg);
+            val += (u-l)/1000000.0 * (v2+v1)/2;
+        }
+        if (stored)
+            variables.put(var, v);
+        else
+            variables.remove(var);
+        return val;
+    }
+
     private double abs(String s) {
         if (malformed)
             return 0;
@@ -294,7 +392,7 @@ public class Interpreter {
                 val *= Math.PI / 180.0;
             int t = (int)(val / (Math.PI/2));
             double test = (Math.PI/2) * t;
-            if (test >= val*0.999 && test <= val*1.001
+            if (test >= val*0.99999 && test <= val*1.00001
                     && test % Math.PI != 0) {
                 malformed = true;
                 return 0;
@@ -416,80 +514,83 @@ public class Interpreter {
     }
 
     private double sort(String s) {
+        String left;
+        String val;
+        String right;
         if (malformed)
             return 0;
         if (s.contains("->")) {
             print = false;
-            return store(s);
+            store(s);
+            return 0;
         }
         else if (isBool(s))
             return bool(s);
-        else if (s.startsWith("("))
-            return sort(group(s));
+        else if (s.startsWith("(")) {
+            val = subParentheses(s);
+            right = s.substring(val.length());
+            val = val.substring(val.indexOf("(")+1, val.lastIndexOf(")"));
+            return sort(Double.toString(sort(val)) + right);
+        }
         else if (s.contains("sqrt(")) {
             if (s.endsWith("sqrt(")) {
                 malformed = true;
                 return 0;
             }
-            int index = s.indexOf("sqrt(");
-            String test = s.substring(index);
-            int count = 0;
-            boolean start = false;
-            for (char c : test.toCharArray()) {
-                if (c == '(') {
-                    count++;
-                    start = true;
-                }
-                else if (c == ')')
-                    count--;
-                index++;
-                if (count == 0 && start)
-                    break;
-            }
-            String left = s.substring(0, s.indexOf("sqrt("));
-            String val;
-            String right;
-            if (index == s.length()) {
-                val = s.substring(s.indexOf("sqrt")+4);
-                right = "^(1/2)";
-            }
-            else {
-                val = s.substring(s.indexOf("sqrt")+4, index);
-                right = "^(1/2)" + s.substring(index);
-            }
+            left = s.substring(0, s.indexOf("sqrt("));
+            val = subParentheses(s.substring(s.indexOf("sqrt(")));
+            right = "^(1/2)"+s.substring(s.indexOf("sqrt(") + val.length());
+            val = val.replaceFirst("sqrt", "");
             return sort(left + val + right);
         }
         else if (s.contains("log(")) {
-            return sort(log(s));
+            left = s.substring(0, s.indexOf("log("));
+            val = subParentheses(s.substring(s.indexOf("log(")));
+            right = s.substring(s.indexOf("log(") + val.length());
+            return sort(left + Double.toString(log(val)) + right);
         }
         else if (s.contains("ln(")) {
-            return sort(ln(s));
+            left = s.substring(0, s.indexOf("ln"));
+            val = subParentheses(s.substring(s.indexOf("ln(")));
+            right = s.substring(s.indexOf("ln(")+val.length());
+            return sort(left + ln(val) + right);
         }
         else if (s.contains("sum(")) {
-            return 0;
+            left = s.substring(0, s.indexOf("sum("));
+            val = subParentheses(s.substring(s.indexOf("sum(")));
+            right = s.substring(s.indexOf("sum(") + val.length());
+            return sort(left + Double.toString(sum(val, 0)) + right);
         }
         else if (s.contains("prod(")) {
-            return 0;
+            left = s.substring(0, s.indexOf("prod("));
+            val = subParentheses(s.substring(s.indexOf("prod(")));
+            right = s.substring(s.indexOf("prod(") + val.length());
+            val = val.replace("prod(", "sum(");
+            return sort(left + Double.toString(sum(val, 1)) + right);
         }
         else if (s.contains("mod(")) {
-            return 0;
+            left = s.substring(0, s.indexOf("mod("));
+            val = subParentheses(s.substring(s.indexOf("mod(")));
+            right = s.substring(s.indexOf("mod(") + val.length());
+            return sort(left + Double.toString(mod(val)) + right);
         }
         else if (s.contains("round(")) {
-            return 0;
-        }
-        else if (s.contains("d(")) {
-            return 0;
+            left = s.substring(0, s.indexOf("round("));
+            val = subParentheses(s.substring(s.indexOf("round(")));
+            right = s.substring(s.indexOf("round(") + val.length());
+            return sort(left + Double.toString(round(val)) + right);
         }
         else if (s.contains("int(")) {
-            return 0;
-        }
-        else if (s.contains("limit(")) {
-            return 0;
+            left = s.substring(0, s.indexOf("int("));
+            val = subParentheses(s.substring(s.indexOf("int(")));
+            right = s.substring(s.indexOf("int(") + val.length());
+            return sort(left + Double.toString(integrate(val)) + right);
         }
         else if (s.contains("(")) {
-            String left = s.substring(0, s.indexOf("("));
-            String right = group(s.substring(s.indexOf("(")));
-            return sort(left + right);
+            left = s.substring(0, s.indexOf("("));
+            val = subParentheses(s.substring(s.indexOf("(")));
+            right = s.substring(s.indexOf("(") + val.length());
+            return sort(left + Double.toString(sort(val)) + right);
         }
         else if (s.isEmpty())
             return 0;
@@ -559,9 +660,7 @@ public class Interpreter {
                         System.out.println("false");
                 }
                 else {
-                    double f = Math.pow(10.0, round);
-                    int cast = (int)Math.round(interpret.value * f);
-                    interpret.value = cast / f;
+                    interpret.value = interpret.round("round("+interpret.value+","+round+")");
                     if (interpret.value % 1 == 0)
                         System.out.println((int)interpret.value);
                     else
