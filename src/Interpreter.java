@@ -21,7 +21,7 @@ public class Interpreter {
     //sqrt
     //abs
     //trig
-    -logarithms
+    //logarithms
     -differentiation
     -integration
     -limits
@@ -197,6 +197,19 @@ public class Interpreter {
         return left + val + right;
     }
 
+    private String ln(String s) {
+        String left = s.substring(0, s.indexOf("ln"));
+        String val = subParentheses(s.substring(s.indexOf("ln(")));
+        String right = s.substring(s.indexOf("ln(")+val.length());
+        double arg = sort(val.substring(val.indexOf("(")+1, val.lastIndexOf(")")));
+        if (arg == 0) {
+            malformed = true;
+            return "";
+        }
+        val = Double.toString(arg);
+        return left + val + right;
+    }
+    
     private double abs(String s) {
         if (malformed)
             return 0;
@@ -450,7 +463,7 @@ public class Interpreter {
             return sort(log(s));
         }
         else if (s.contains("ln(")) {
-            return 0;
+            return sort(ln(s));
         }
         else if (s.contains("sum(")) {
             return 0;
