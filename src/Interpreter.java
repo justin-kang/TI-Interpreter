@@ -1,8 +1,5 @@
 import java.io.*;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Scanner;
 
@@ -647,21 +644,32 @@ public class Interpreter {
         constants.put("e", Math.E);
     }
 
-    private String fileReader() throws Exception{
-        URL path = Interpreter.class.getResource("InterpreterTest.test");
+    private String fileReader() throws Exception {
+        URL path = Interpreter.class.getResource("Interpreter.test");
         File f = new File(path.getFile());
         Scanner scan = new Scanner(new FileReader(f));
-        //BufferedReader reader = new BufferedReader(new FileReader(f));
         StringBuilder sb = new StringBuilder();
-        //String line = scan.nextLine();
-        //String line = reader.readLine();
-        while (scan.hasNextLine() /*line != null*/) {
+        while (scan.hasNextLine()) {
             sb.append(scan.nextLine());
             sb.append("\n");
-            //line = reader.readLine();
         }
-        //System.out.println(sb.toString());
         return sb.toString();
+    }
+
+    private void fileWriter(String s) {
+        FileWriter fw;
+        PrintWriter pw;
+        try {
+            fw = new FileWriter("src/Interpreter.out", true);
+            pw = new PrintWriter(fw);
+            pw.write(s);
+            pw.close();
+            fw.close();
+        }
+        catch (IOException e) {
+            System.out.println("Bad output file");
+            System.exit(-1);
+        }
     }
 
     public static void main(String[] args) throws IOException {
@@ -719,11 +727,14 @@ public class Interpreter {
                 input = scan.nextLine();
             }
             else {
-                input = in;
-                if (in.contains("\n"))
-                    in = in.substring(in.indexOf("\n")+1);
-                else
+                if (in.contains("\n")) {
+                    input = in.substring(0, in.indexOf("\n"));
+                    in = in.substring(in.indexOf("\n") + 1);
+                }
+                else {
+                    input = in;
                     in = "";
+                }
             }
             if (input.isEmpty()) {
                 System.exit(0);
@@ -739,24 +750,48 @@ public class Interpreter {
             }
             interpret.value = interpret.sort(function);
             if (interpret.malformed) {
-                System.out.println("Invalid input");
-                System.out.println(input);
+                if (!test) {
+                    System.out.println("Invalid input");
+                    System.out.println(input);
+                }
+                else {
+                    interpret.fileWriter("Invalid input\n");
+                    interpret.fileWriter(input+"\n");
+                }
                 continue;
             }
             if (interpret.print) {
                 if (interpret.bool) {
-                    if (interpret.value == 1)
-                        System.out.println("true");
-                    else
-                        System.out.println("false");
+                    if (interpret.value == 1) {
+                        if (!test)
+                            System.out.println("true");
+                        else
+                            interpret.fileWriter("true\n");
+                    }
+                    else {
+                        if (!test)
+                            System.out.println("false");
+                        else
+                            interpret.fileWriter("false\n");
+                    }
                 }
                 else {
                     interpret.value = interpret.round("round("+
                                        interpret.value+","+round+")");
-                    if (interpret.value % 1 == 0)
-                        System.out.println((int)interpret.value);
-                    else
-                        System.out.println(interpret.value);
+                    if (interpret.value % 1 == 0) {
+                        if (!test)
+                            System.out.println((int)interpret.value);
+                        else
+                            interpret.fileWriter(Integer.toString(
+                                    (int)interpret.value) + "\n");
+                    }
+                    else {
+                        if (!test)
+                            System.out.println(interpret.value);
+                        else
+                            interpret.fileWriter(Double.toString(
+                                    interpret.value) + "\n");
+                    }
                 }
             }
         }
