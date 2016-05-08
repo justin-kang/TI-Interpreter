@@ -22,7 +22,9 @@ public class Interpreter {
     //abs
     //trig
     //logarithms
+    //limit
     //integration
+    //differentiation
     //summation
     //product
     //rounding
@@ -32,8 +34,6 @@ public class Interpreter {
     /*
     -solver
     -zero
-    -limit
-    -differentiation
      */
 
     private boolean isVar(String s) {
@@ -301,6 +301,60 @@ public class Interpreter {
             double v2 = sort(arg);
             val += (u-l)/1000000.0 * (v2+v1)/2;
         }
+        if (stored)
+            variables.put(var, v);
+        else
+            variables.remove(var);
+        return val;
+    }
+
+    private double differentiate(String s) {
+        if (malformed)
+            return 0;
+        if (s.length() - s.replaceAll(",", "").length() < 2) {
+            malformed = true;
+            return 0;
+        }
+        double v = 0;
+        boolean stored = false;
+        double deg = sort(s.substring(s.lastIndexOf(",")+1, s.lastIndexOf(")")));
+        s = s.substring(0, s.lastIndexOf(","));
+        String var = s.substring(s.lastIndexOf(",")+1);
+        String arg = s.substring(s.indexOf("d(")+2, s.lastIndexOf(","));
+        if (variables.containsKey(var)) {
+            stored = true;
+            v = variables.get(var);
+        }
+        variables.put(var, deg-0.0000001);
+        double v1 = sort(arg);
+        variables.put(var, deg+0.0000001);
+        double v2 = sort(arg);
+        if (stored)
+            variables.put(var, v);
+        else
+            variables.remove(var);
+        return (v2 - v1) / 0.0000002;
+    }
+
+    private double limit(String s) {
+        if (malformed)
+            return 0;
+        if (s.length() - s.replaceAll(",", "").length() < 2) {
+            malformed = true;
+            return 0;
+        }
+        double v = 0;
+        boolean stored = false;
+        double lim = sort(s.substring(s.lastIndexOf(",")+1, s.lastIndexOf(")")));
+        s = s.substring(0, s.lastIndexOf(","));
+        String var = s.substring(s.lastIndexOf(",")+1);
+        String arg = s.substring(s.indexOf("limit(")+6, s.lastIndexOf(","));
+        if (variables.containsKey(var)) {
+            stored = true;
+            v = variables.get(var);
+        }
+        variables.put(var, lim);
+        double val = sort(arg);
         if (stored)
             variables.put(var, v);
         else
@@ -585,6 +639,18 @@ public class Interpreter {
             val = subParentheses(s.substring(s.indexOf("int(")));
             right = s.substring(s.indexOf("int(") + val.length());
             return sort(left + Double.toString(integrate(val)) + right);
+        }
+        else if (s.contains("d(")) {
+            left = s.substring(0, s.indexOf("d("));
+            val = subParentheses(s.substring(s.indexOf("d(")));
+            right = s.substring(s.indexOf("d(") + val.length());
+            return sort(left + Double.toString(differentiate(val)) + right);
+        }
+        else if (s.contains("limit(")) {
+            left = s.substring(0, s.indexOf("limit("));
+            val = subParentheses(s.substring(s.indexOf("limit(")));
+            right = s.substring(s.indexOf("limit(") + val.length());
+            return sort(left + Double.toString(limit(val)) + right);
         }
         else if (s.contains("(")) {
             left = s.substring(0, s.indexOf("("));
