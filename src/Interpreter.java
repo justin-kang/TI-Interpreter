@@ -1,3 +1,8 @@
+import java.io.*;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Scanner;
 
@@ -642,7 +647,24 @@ public class Interpreter {
         constants.put("e", Math.E);
     }
 
-    public static void main(String[] args) {
+    private String fileReader() throws Exception{
+        URL path = Interpreter.class.getResource("InterpreterTest.test");
+        File f = new File(path.getFile());
+        Scanner scan = new Scanner(new FileReader(f));
+        //BufferedReader reader = new BufferedReader(new FileReader(f));
+        StringBuilder sb = new StringBuilder();
+        //String line = scan.nextLine();
+        //String line = reader.readLine();
+        while (scan.hasNextLine() /*line != null*/) {
+            sb.append(scan.nextLine());
+            sb.append("\n");
+            //line = reader.readLine();
+        }
+        //System.out.println(sb.toString());
+        return sb.toString();
+    }
+
+    public static void main(String[] args) throws IOException {
         Interpreter interpret = new Interpreter();
         if (args.length > 0 && args[0] != null) {
             String mode = args[0].toLowerCase();
@@ -669,11 +691,43 @@ public class Interpreter {
                 System.exit(-1);
             }
         }
+        boolean test = false;
+        if (args.length > 2 && args[2] != null) {
+            if (args[2].equals("1"))
+                test = true;
+            else if (args[2].equals("0"))
+                test = false;
+            else {
+                System.out.println("Improper testing");
+                System.exit(-1);
+            }
+        }
         interpret.variables = new HashMap<>();
         interpret.initConstants();
         Scanner scan = new Scanner(System.in);
+        String in = "";
+        try {
+            in = interpret.fileReader();
+        }
+        catch (Exception e) {
+            System.out.println("Bad test file");
+            System.exit(-1);
+        }
         while (true) {
-            String input = scan.nextLine();
+            String input;
+            if (!test) {
+                input = scan.nextLine();
+            }
+            else {
+                input = in;
+                if (in.contains("\n"))
+                    in = in.substring(in.indexOf("\n")+1);
+                else
+                    in = "";
+            }
+            if (input.isEmpty()) {
+                System.exit(0);
+            }
             String function = input.toLowerCase().replaceAll(" ", "");
             interpret.malformed = false;
             interpret.print = true;
