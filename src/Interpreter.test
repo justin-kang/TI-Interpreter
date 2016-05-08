@@ -1,2 +1,164 @@
-log(5)
+1 == 1
+1 >= 1
+1 <= 1
+1 > 1
+1 < 1
+1 != 1
+
 log(10)
+log(5)
+log(0)
+log(10,0)
+log(10,2)
+log(10,10) == log(10)
+ln(0)
+ln(0)
+ln(5,2)
+log(5*2) == log(5)*log(2)
+log(5/2) == log(5)-log(2)
+log(5^2) == 2*log(5)
+2^(log(5,2))
+
+sum(5,x,2,0)
+sum(5*x,x,0,2)
+sum(5*x^2,x,0,2)
+sum(-1,x,0,2)
+
+prod(5,x,2,0)
+prod(5*x,x,0,2)
+prod(5*x^2,x,0,2)
+prod((-1)^x,x,0,2)
+
+mod(5,10)
+mod(15,10)
+mod(-1,10)
+mod(0,10)
+
+round(pi, 2)
+round(e, 2)
+
+int(x,x,0,5)
+int(5,x,0,5)
+int(-5,x,5,0)
+2*int(x,x,0,5)
+int(abs(x),x,-5,5)
+x
+
+d(5,x,2)
+d(x,x,2)
+d(x^2,x,2)
+d(log(x),x,2)
+d(ln(x),x,2)
+d(int(x,0,2)*x,x,2)
+
+lim(x,x,2)
+lim(abs(x),x,0)
+
+abs(-5)
+abs(5)
+
+cos(0)
+cos(pi)
+cos(50*pi)
+cos(pi/2)
+cosh(0)
+cosh(pi)
+cosh(pi/2)
+cos-1(50)
+cos-1(1)
+cos-1(0)
+
+sin(0)
+sin(pi)
+sin(50*pi)
+sin(pi/2)
+sinh(0)
+sinh(pi)
+sinh(pi/2)
+sin-1(50)
+sin-1(1)
+sin-1(0)
+
+tan(0)
+tan(pi)
+tan(50*pi)
+tan(pi/2)
+tanh(0)
+tanh(pi)
+tanh(pi/2)
+tan-1(50)
+tan-1(1)
+tan-1(0)
+
+5
+10
+15
+pi
+e
+
+x
+x->5
+x
+clear
+x
+pi->0
+pi
+clear
+pi
+
+5 + -5
+1 * -5
+1 / -1
+-1 * -1
+(-1)^2
+-1^2
+(5+5)*5
+5*(5+5)
+5+5^2
+5+5*5
+4^(1/2)
+sqrt(4)
+sqrt(-1)
+5!
+7!/6!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

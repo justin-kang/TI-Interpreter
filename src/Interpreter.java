@@ -32,8 +32,6 @@ public class Interpreter {
                 return true;
             }
         }
-        else
-            bool = false;
         return bool;
     }
 
@@ -735,13 +733,20 @@ public class Interpreter {
                     input = in;
                     in = "";
                 }
+                if (in.isEmpty() && input.isEmpty()) 
+                    System.exit(0);
             }
-            if (input.isEmpty()) {
-                System.exit(0);
+            if (input.isEmpty() || input.equals("\n")) {
+                if (!test)
+                    System.out.println("");
+                else
+                    interpret.fileWriter("\n");
+                continue;
             }
             String function = input.toLowerCase().replaceAll(" ", "");
             interpret.malformed = false;
             interpret.print = true;
+            interpret.bool = false;
             if (function.equals("exit"))
                 break;
             if (function.equals("clear")) {
