@@ -11,42 +11,11 @@ public class Interpreter {
     private boolean print;
     private double value;
 
-    /*
-    //constants
-    //store
-    //bool
-    //four function
-    //factorial
-    //exponents
-    //sqrt
-    //abs
-    //trig
-    //logarithms
-    //limit
-    //integration
-    //differentiation
-    //summation
-    //product
-    //rounding
-    //mod
-     */
-
-    /*
-    -solver
-    -zero
-     */
-
-    private boolean isVar(String s) {
-        return variables.containsKey(s);
-    }
+    private boolean isVar(String s) { return variables.containsKey(s); }
 
     private boolean isVal(String s) {
-        try {
-            Float.parseFloat(s);
-        }
-        catch (NumberFormatException e) {
-            return false;
-        }
+        try { Float.parseFloat(s); }
+        catch (NumberFormatException e) { return false; }
         return true;
     }
 
@@ -133,9 +102,8 @@ public class Interpreter {
                 count++;
                 set = true;
             }
-            else if (c == ')') {
+            else if (c == ')')
                 count--;
-            }
             index++;
             if (count == 0 && set)
                 break;
@@ -155,7 +123,8 @@ public class Interpreter {
         double arg;
         if (s.contains(",")) {
             arg = sort(s.substring(s.indexOf("(")+1, s.lastIndexOf(",")));
-            double base = sort(s.substring(s.lastIndexOf(",")+1, s.lastIndexOf(")")));
+            double base = sort(s.substring(s.lastIndexOf(",")+1, 
+                                            s.lastIndexOf(")")));
             if (arg == 0) {
                 malformed = true;
                 return 0;
@@ -199,7 +168,8 @@ public class Interpreter {
         double val = 0;
         double v = 0;
         boolean stored = false;
-        int u = (int)sort(s.substring(s.lastIndexOf(",")+1, s.lastIndexOf(")")));
+        int u = (int)sort(s.substring(s.lastIndexOf(",")+1, 
+                                        s.lastIndexOf(")")));
         s = s.substring(0, s.lastIndexOf(","));
         int l = (int)sort(s.substring(s.lastIndexOf(",")+1));
         s = s.substring(0, s.lastIndexOf(","));
@@ -248,8 +218,10 @@ public class Interpreter {
             malformed = true;
             return 0;
         }
-        double dividend = sort(s.substring(s.indexOf("mod(")+4, s.lastIndexOf(",")));
-        double divisor = sort(s.substring(s.lastIndexOf(",")+1, s.lastIndexOf(")")));
+        double dividend = sort(s.substring(s.indexOf("mod(")+4, 
+                                            s.lastIndexOf(",")));
+        double divisor = sort(s.substring(s.lastIndexOf(",")+1, 
+                                           s.lastIndexOf(")")));
         return dividend % divisor;
     }
 
@@ -260,17 +232,18 @@ public class Interpreter {
             malformed = true;
             return 0;
         }
-        double arg = sort(s.substring(s.indexOf("round(")+6, s.lastIndexOf(",")));
-        double round = sort(s.substring(s.lastIndexOf(",")+1, s.lastIndexOf(")")));
+        double arg = sort(s.substring(s.indexOf("round(")+6, 
+                                       s.lastIndexOf(",")));
+        double round = sort(s.substring(s.lastIndexOf(",")+1, 
+                                         s.lastIndexOf(")")));
         round = Math.pow(10.0, round);
         int cast = (int)Math.round(arg * round);
         return cast / round;
     }
 
     private double integrate(String s) {
-        if (malformed) {
+        if (malformed)
             return 0;
-        }
         if (s.length() - s.replaceAll(",", "").length() < 3) {
             malformed = true;
             return 0;
@@ -317,7 +290,8 @@ public class Interpreter {
         }
         double v = 0;
         boolean stored = false;
-        double deg = sort(s.substring(s.lastIndexOf(",")+1, s.lastIndexOf(")")));
+        double deg = sort(s.substring(s.lastIndexOf(",")+1, 
+                                       s.lastIndexOf(")")));
         s = s.substring(0, s.lastIndexOf(","));
         String var = s.substring(s.lastIndexOf(",")+1);
         String arg = s.substring(s.indexOf("d(")+2, s.lastIndexOf(","));
@@ -345,7 +319,8 @@ public class Interpreter {
         }
         double v = 0;
         boolean stored = false;
-        double lim = sort(s.substring(s.lastIndexOf(",")+1, s.lastIndexOf(")")));
+        double lim = sort(s.substring(s.lastIndexOf(",")+1, 
+                                       s.lastIndexOf(")")));
         s = s.substring(0, s.lastIndexOf(","));
         String var = s.substring(s.lastIndexOf(",")+1);
         String arg = s.substring(s.indexOf("limit(")+6, s.lastIndexOf(","));
@@ -463,9 +438,7 @@ public class Interpreter {
         if (isVar(s))
             return variables.get(s);
         else if (isVal(s)) {
-            try {
-                return (double)Float.parseFloat(s);
-            }
+            try { return (double)Float.parseFloat(s); }
             catch (NumberFormatException e) {
                 malformed = true;
                 return 0;
@@ -686,9 +659,7 @@ public class Interpreter {
             interpret.degrees = false;
         double round = 4.0;
         if (args.length > 1 && args[1] != null) {
-            try {
-                round = (double)Float.parseFloat(args[1]);
-            }
+            try { round = (double)Float.parseFloat(args[1]); }
             catch (NumberFormatException e) {
                 System.out.println("Unavailable round");
                 System.exit(-1);
@@ -726,7 +697,8 @@ public class Interpreter {
                         System.out.println("false");
                 }
                 else {
-                    interpret.value = interpret.round("round("+interpret.value+","+round+")");
+                    interpret.value = interpret.round("round("+
+                                       interpret.value+","+round+")");
                     if (interpret.value % 1 == 0)
                         System.out.println((int)interpret.value);
                     else
