@@ -12,11 +12,13 @@ public class Interpreter {
     private boolean malformed;
     private boolean print;
     private double value;
+    private boolean first;
+    private boolean lastline;
 
     private boolean isVar(String s) { return variables.containsKey(s); }
 
     private boolean isVal(String s) {
-        try { Float.parseFloat(s); }
+        try { Double.parseDouble(s); }
         catch (NumberFormatException e) { return false; }
         return true;
     }
@@ -38,12 +40,12 @@ public class Interpreter {
     private void store(String s) {
         if (malformed)
             return;
-        if (s.indexOf("->") == 0 || s.indexOf("->") == s.length()-1) {
+        if (s.indexOf("->") == 0 || s.indexOf("->") == s.length()-2) {
             malformed = true;
             return;
         }
         String var = s.substring(0, s.indexOf("->"));
-        double val = sort(s.substring(s.indexOf("->")+1));
+        double val = sort(s.substring(s.indexOf("->")+2));
         variables.put(var, val);
     }
 
@@ -125,7 +127,7 @@ public class Interpreter {
             arg = sort(s.substring(s.indexOf("(")+1, s.lastIndexOf(",")));
             double base = sort(s.substring(s.lastIndexOf(",")+1, 
                                             s.lastIndexOf(")")));
-            if (arg == 0) {
+            if (arg == 0.0 || base == 0.0) {
                 malformed = true;
                 return 0;
             }
@@ -190,14 +192,16 @@ public class Interpreter {
             }
         }
         for (int i = l; i <= u; i++) {
-            variables.put(var, (double)i);
+            variables.put(var, (double)((int)i));
             if (op == 0)
                 val += sort(arg);
             else if (op == 1) {
-                if (i == l)
+                if (i == l) {
                     val = sort(arg);
-                else
+                }
+                else {
                     val *= sort(arg);
+                }
             }
             else {
                 malformed = true;
@@ -222,7 +226,19 @@ public class Interpreter {
                                             s.lastIndexOf(",")));
         double divisor = sort(s.substring(s.lastIndexOf(",")+1, 
                                            s.lastIndexOf(")")));
-        return dividend % divisor;
+        if ((dividend > 0 && divisor > 0) || (dividend < 0 && divisor < 0))
+            return dividend % divisor;
+        else if (dividend == 0)
+            return 0;
+        else if (divisor == 0)
+            return dividend;
+        else {
+            double quotient = dividend/divisor;
+            if (quotient < 0)
+                return dividend - Math.floor(quotient) * divisor;
+            else
+                return dividend - Math.ceil(quotient) * divisor;
+        }
     }
 
     private double round(String s) {
@@ -267,12 +283,12 @@ public class Interpreter {
             l = u;
             u = temp;
         }
-        for (double i = l; i < u; i = i + (u-l)/1000000.0) {
+        for (double i = l; i < u; i = i + (u-l)/10000000.0) {
             variables.put(var, i);
             double v1 = sort(arg);
-            variables.put(var, i + (u-l)/1000000.0);
+            variables.put(var, i + (u-l)/10000000.0);
             double v2 = sort(arg);
-            val += (u-l)/1000000.0 * (v2+v1)/2;
+            val += (u-l)/10000000.0 * (v2+v1)/2;
         }
         if (stored)
             variables.put(var, v);
@@ -419,10 +435,7 @@ public class Interpreter {
             val = sort(s.substring("tan".length()));
             if (degrees)
                 val *= Math.PI / 180.0;
-            int t = (int)(val / (Math.PI/2));
-            double test = (Math.PI/2) * t;
-            if (test >= val*0.99999 && test <= val*1.00001
-                    && test % Math.PI != 0) {
+            if (val % (Math.PI/2) == 0 && val % Math.PI != 0) {
                 malformed = true;
                 return 0;
             }
@@ -438,7 +451,7 @@ public class Interpreter {
         if (isVar(s))
             return variables.get(s);
         else if (isVal(s)) {
-            try { return (double)Float.parseFloat(s); }
+            try { return Double.parseDouble(s); }
             catch (NumberFormatException e) {
                 malformed = true;
                 return 0;
@@ -493,6 +506,10 @@ public class Interpreter {
             }
             left = sort(s.substring(0, s.indexOf("^")));
             right = sort(s.substring(s.indexOf("^")+1));
+            if (left < 0 && Math.abs(right) < 1 && right != 0) {
+                malformed = true;
+                return 0;
+            }
             return Math.pow(left, right);
         }
         else if (s.endsWith("!")) {
@@ -559,28 +576,17 @@ public class Interpreter {
             val = val.substring(val.indexOf("(")+1, val.lastIndexOf(")"));
             return sort(Double.toString(sort(val)) + right);
         }
-        else if (s.contains("sqrt(")) {
-            if (s.endsWith("sqrt(")) {
-                malformed = true;
-                return 0;
-            }
-            left = s.substring(0, s.indexOf("sqrt("));
-            val = subParentheses(s.substring(s.indexOf("sqrt(")));
-            right = "^(1/2)"+s.substring(s.indexOf("sqrt(") + val.length());
-            val = val.replaceFirst("sqrt", "");
-            return sort(left + val + right);
+        else if (s.contains("--")) {
+            if (s.indexOf("--") == 0)
+                s = s.replaceFirst("--", "");
+            else
+                s = s.replaceFirst("--", "+");
+            return sort(s);
         }
-        else if (s.contains("log(")) {
-            left = s.substring(0, s.indexOf("log("));
-            val = subParentheses(s.substring(s.indexOf("log(")));
-            right = s.substring(s.indexOf("log(") + val.length());
-            return sort(left + Double.toString(log(val)) + right);
-        }
-        else if (s.contains("ln(")) {
-            left = s.substring(0, s.indexOf("ln"));
-            val = subParentheses(s.substring(s.indexOf("ln(")));
-            right = s.substring(s.indexOf("ln(")+val.length());
-            return sort(left + ln(val) + right);
+        else if (s.contains(")(")) {
+            left = s.substring(0, s.indexOf(")(")+1);
+            right = s.substring(s.indexOf(")(")+1);
+            return sort(left + "*" + right);
         }
         else if (s.contains("sum(")) {
             left = s.substring(0, s.indexOf("sum("));
@@ -625,6 +631,29 @@ public class Interpreter {
             right = s.substring(s.indexOf("limit(") + val.length());
             return sort(left + Double.toString(limit(val)) + right);
         }
+        else if (s.contains("sqrt(")) {
+            if (s.endsWith("sqrt(")) {
+                malformed = true;
+                return 0;
+            }
+            left = s.substring(0, s.indexOf("sqrt("));
+            val = subParentheses(s.substring(s.indexOf("sqrt(")));
+            right = "^(1/2)"+s.substring(s.indexOf("sqrt(") + val.length());
+            val = val.replaceFirst("sqrt", "");
+            return sort(left + val + right);
+        }
+        else if (s.contains("log(")) {
+            left = s.substring(0, s.indexOf("log("));
+            val = subParentheses(s.substring(s.indexOf("log(")));
+            right = s.substring(s.indexOf("log(") + val.length());
+            return sort(left + Double.toString(log(val)) + right);
+        }
+        else if (s.contains("ln(")) {
+            left = s.substring(0, s.indexOf("ln"));
+            val = subParentheses(s.substring(s.indexOf("ln(")));
+            right = s.substring(s.indexOf("ln(")+val.length());
+            return sort(left + ln(val) + right);
+        }
         else if (s.contains("(")) {
             left = s.substring(0, s.indexOf("("));
             val = subParentheses(s.substring(s.indexOf("(")));
@@ -658,7 +687,12 @@ public class Interpreter {
         FileWriter fw;
         PrintWriter pw;
         try {
-            fw = new FileWriter("src/Interpreter.out", true);
+            if (first) {
+                fw = new FileWriter("src/Interpreter.out", false);
+                first = false;
+            }
+            else
+                fw = new FileWriter("src/Interpreter.out", true);
             pw = new PrintWriter(fw);
             pw.write(s);
             pw.close();
@@ -687,7 +721,7 @@ public class Interpreter {
             interpret.degrees = false;
         double round = 4.0;
         if (args.length > 1 && args[1] != null) {
-            try { round = (double)Float.parseFloat(args[1]); }
+            try { round = Double.parseDouble(args[1]); }
             catch (NumberFormatException e) {
                 System.out.println("Unavailable round");
                 System.exit(-1);
@@ -710,6 +744,8 @@ public class Interpreter {
         }
         interpret.variables = new HashMap<>();
         interpret.initConstants();
+        interpret.first = false;
+        interpret.lastline = false;
         Scanner scan = new Scanner(System.in);
         String in = "";
         try {
@@ -728,6 +764,8 @@ public class Interpreter {
                 if (in.contains("\n")) {
                     input = in.substring(0, in.indexOf("\n"));
                     in = in.substring(in.indexOf("\n") + 1);
+                    if (in.isEmpty())
+                        interpret.lastline = true;
                 }
                 else {
                     input = in;
@@ -739,8 +777,10 @@ public class Interpreter {
             if (input.isEmpty() || input.equals("\n")) {
                 if (!test)
                     System.out.println("");
-                else
-                    interpret.fileWriter("\n");
+                else {
+                    if (!interpret.lastline)
+                        interpret.fileWriter("\n");
+                }
                 continue;
             }
             String function = input.toLowerCase().replaceAll(" ", "");
@@ -761,7 +801,9 @@ public class Interpreter {
                 }
                 else {
                     interpret.fileWriter("Invalid input\n");
-                    interpret.fileWriter(input+"\n");
+                    interpret.fileWriter(input);
+                    if (!interpret.lastline)
+                        interpret.fileWriter("\n");
                 }
                 continue;
             }
@@ -770,14 +812,20 @@ public class Interpreter {
                     if (interpret.value == 1) {
                         if (!test)
                             System.out.println("true");
-                        else
-                            interpret.fileWriter("true\n");
+                        else {
+                            interpret.fileWriter("true");
+                            if (!interpret.lastline)
+                                interpret.fileWriter("\n");
+                        }
                     }
                     else {
                         if (!test)
                             System.out.println("false");
-                        else
-                            interpret.fileWriter("false\n");
+                        else {
+                            interpret.fileWriter("false");
+                            if (!interpret.lastline)
+                                interpret.fileWriter("\n");
+                        }
                     }
                 }
                 else {
@@ -786,16 +834,20 @@ public class Interpreter {
                     if (interpret.value % 1 == 0) {
                         if (!test)
                             System.out.println((int)interpret.value);
-                        else
-                            interpret.fileWriter(Integer.toString(
-                                    (int)interpret.value) + "\n");
+                        else {
+                            interpret.fileWriter(Integer.toString((int) interpret.value));
+                            if (!interpret.lastline)
+                                interpret.fileWriter("\n");
+                        }
                     }
                     else {
                         if (!test)
                             System.out.println(interpret.value);
-                        else
-                            interpret.fileWriter(Double.toString(
-                                    interpret.value) + "\n");
+                        else {
+                            interpret.fileWriter(Double.toString(interpret.value));
+                            if (!interpret.lastline)
+                                interpret.fileWriter("\n");
+                        }
                     }
                 }
             }
