@@ -1,5 +1,6 @@
 import java.io.*;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Scanner;
 
@@ -15,14 +16,17 @@ public class Interpreter {
     private boolean first;
     private boolean lastline;
 
+    //checks if string is stored as a variable
     private boolean isVar(String s) { return variables.containsKey(s); }
 
+    //checks if string is a number
     private boolean isVal(String s) {
         try { Double.parseDouble(s); }
         catch (NumberFormatException e) { return false; }
         return true;
     }
 
+    //checks if the function is a boolean
     private boolean isBool(String s) {
         if (s.contains("<") || s.contains(">") || s.contains("!=") ||
                 s.contains("==")) {
@@ -37,6 +41,7 @@ public class Interpreter {
         return bool;
     }
 
+    //stores the string as a variable
     private void store(String s) {
         if (malformed)
             return;
@@ -49,6 +54,7 @@ public class Interpreter {
         variables.put(var, val);
     }
 
+    //carries out boolean comparison
     private double bool(String s) {
         if (malformed)
             return 0;
@@ -93,6 +99,7 @@ public class Interpreter {
         return 0;
     }
 
+    //returns closed parentheses string
     private String subParentheses(String s) {
         if (malformed)
             return "";
@@ -119,6 +126,7 @@ public class Interpreter {
         return s.substring(0, index);
     }
 
+    //performs logarithms
     private double log(String s) {
         if (malformed)
             return 0;
@@ -148,6 +156,7 @@ public class Interpreter {
         return arg;
     }
 
+    //performs natural logarithms
     private double ln(String s) {
         if (malformed)
             return 0;
@@ -159,6 +168,7 @@ public class Interpreter {
         return Math.log(arg);
     }
 
+    //performs summation or product notation, depending on op
     private double sum(String s, int op) {
         if (malformed) {
             return 0;
@@ -215,6 +225,7 @@ public class Interpreter {
         return val;
     }
 
+    //performs modulo
     private double mod(String s) {
         if (malformed)
             return 0;
@@ -241,6 +252,7 @@ public class Interpreter {
         }
     }
 
+    //performs rounding
     private double round(String s) {
         if (malformed)
             return 0;
@@ -257,6 +269,7 @@ public class Interpreter {
         return cast / round;
     }
 
+    //performs integation
     private double integrate(String s) {
         if (malformed)
             return 0;
@@ -297,6 +310,7 @@ public class Interpreter {
         return val;
     }
 
+    //performs differentiation
     private double differentiate(String s) {
         if (malformed)
             return 0;
@@ -326,6 +340,7 @@ public class Interpreter {
         return (v2 - v1) / 0.0000002;
     }
 
+    //performs limits
     private double limit(String s) {
         if (malformed)
             return 0;
@@ -353,12 +368,14 @@ public class Interpreter {
         return val;
     }
 
+    //performs absolute values
     private double abs(String s) {
         if (malformed)
             return 0;
         return Math.abs(sort(s.substring(3)));
     }
 
+    //performs cosine and its variants
     private double cos(String s) {
         if (malformed)
             return 0;
@@ -387,6 +404,7 @@ public class Interpreter {
         }
     }
 
+    //performs sine and its variants
     private double sin(String s) {
         if (malformed)
             return 0;
@@ -415,6 +433,7 @@ public class Interpreter {
         }
     }
 
+    //performs tangent and its variants
     private double tan(String s) {
         if (malformed)
             return 0;
@@ -443,6 +462,7 @@ public class Interpreter {
         }
     }
 
+    //evaluates specific values and carries out order of operations
     private double evaluate(String s) {
         if (malformed)
             return 0;
@@ -557,6 +577,7 @@ public class Interpreter {
         }
     }
 
+    //sorts for special functions
     private double sort(String s) {
         String left;
         String val;
@@ -570,23 +591,16 @@ public class Interpreter {
         }
         else if (isBool(s))
             return bool(s);
+        else if (s.contains(")(")) {
+            left = s.substring(0, s.indexOf(")(")+1);
+            right = s.substring(s.indexOf(")(")+1);
+            return sort(left + "*" + right);
+        }
         else if (s.startsWith("(")) {
             val = subParentheses(s);
             right = s.substring(val.length());
             val = val.substring(val.indexOf("(")+1, val.lastIndexOf(")"));
             return sort(Double.toString(sort(val)) + right);
-        }
-        else if (s.contains("--")) {
-            if (s.indexOf("--") == 0)
-                s = s.replaceFirst("--", "");
-            else
-                s = s.replaceFirst("--", "+");
-            return sort(s);
-        }
-        else if (s.contains(")(")) {
-            left = s.substring(0, s.indexOf(")(")+1);
-            right = s.substring(s.indexOf(")(")+1);
-            return sort(left + "*" + right);
         }
         else if (s.contains("sum(")) {
             left = s.substring(0, s.indexOf("sum("));
@@ -656,8 +670,17 @@ public class Interpreter {
         }
         else if (s.contains("(")) {
             left = s.substring(0, s.indexOf("("));
+            char test = s.charAt(s.indexOf("(")-1);
+            char[] arr = {'(', ')', '+', '-', '*', '/', '^', ','};
+            if (!Arrays.toString(arr).contains(Character.toString(test)))
+                left = left + "*";
             val = subParentheses(s.substring(s.indexOf("(")));
             right = s.substring(s.indexOf("(") + val.length());
+            if (!right.isEmpty()) {
+                test = right.charAt(0);
+                if (!Arrays.toString(arr).contains(Character.toString(test)))
+                    right = "*" + right;
+            }
             return sort(left + Double.toString(sort(val)) + right);
         }
         else if (s.isEmpty())
@@ -665,12 +688,14 @@ public class Interpreter {
         else return evaluate(s);
     }
 
+    //set up what values are considered as constants
     private void initConstants() {
         constants = new HashMap<>();
         constants.put("pi", Math.PI);
         constants.put("e", Math.E);
     }
 
+    //reads functions from a file
     private String fileReader() throws Exception {
         URL path = Interpreter.class.getResource("Interpreter.test");
         File f = new File(path.getFile());
@@ -683,6 +708,7 @@ public class Interpreter {
         return sb.toString();
     }
 
+    //writes outputs to a file
     private void fileWriter(String s) {
         FileWriter fw;
         PrintWriter pw;
@@ -784,6 +810,13 @@ public class Interpreter {
                 continue;
             }
             String function = input.toLowerCase().replaceAll(" ", "");
+            if (function.startsWith("-"))
+                function = "0"+function;
+            if (function.contains("--")) {
+                if (function.indexOf("--") == 0)
+                    function = function.replaceFirst("--", "");
+                function = function.replaceAll("--", "+");
+            }
             interpret.malformed = false;
             interpret.print = true;
             interpret.bool = false;
